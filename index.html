@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iqra Tuition Classes</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        /* Sidebar transition and state */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+                position: fixed;
+                width: 16rem;
+            }
+            .content-area {
+                margin-left: 16rem; /* Match sidebar width */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex h-screen overflow-hidden">
+
+    <!-- The main application container -->
+    <div id="app" class="flex flex-1">
+        <!-- Content will be rendered here by JavaScript -->
+    </div>
+
+    <!-- Modals for user interaction -->
+    <!-- Add Batch Modal -->
+    <div id="add-batch-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Add New Batch</h3>
+            <form id="add-batch-form">
+                <input type="text" id="batch-name-input" placeholder="Enter batch name" required class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <div class="flex justify-end space-x-2">
+                    <button type="button" id="cancel-add-batch" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4" id="confirm-modal-title">Confirm Action</h3>
+            <p class="text-gray-700 mb-4" id="confirm-modal-message">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-2">
+                <button type="button" id="cancel-confirm" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                <button type="button" id="execute-confirm" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Form Modal -->
+    <div id="student-form-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
+            <h3 class="text-xl font-bold mb-4" id="student-form-title">Add New Student</h3>
+            <div id="student-form-message" class="hidden mb-4 p-3 rounded-lg text-sm text-center"></div>
+            <form id="student-form" class="space-y-4">
+                <div>
+                    <label for="student-name" class="block text-sm font-medium text-gray-700">Student Name</label>
+                    <input type="text" id="student-name" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="student-class" class="block text-sm font-medium text-gray-700">Class</label>
+                    <input type="text" id="student-class" name="class" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div>
+                    <label for="student-phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                    <input type="tel" id="student-phone" name="phone" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="student-joining-date" class="block text-sm font-medium text-gray-700">Joining Date</label>
+                        <input type="date" id="student-joining-date" name="joiningDate" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="student-monthly-fee" class="block text-sm font-medium text-gray-700">Monthly Fee (₹)</label>
+                        <input type="number" id="student-monthly-fee" name="monthlyFee" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="student-batch" class="block text-sm font-medium text-gray-700">Assign to Batch</label>
+                    <select id="student-batch" name="batchId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                        <option value="">-- Select Batch --</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" id="cancel-student-form" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                    <button type="submit" id="save-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Library scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // ===========================================================================================================
+        // 1. DATABASE & AUTHENTICATION MODULES
+        // ===========================================================================================================
+
+        const db = new Dexie('TuitionFeeDB');
+        // V2: Added 'fee' to the fees table to correctly track historical fees
+        db.version(2).stores({
+            users: '++id, username, pinHash',
+            batches: '++id, userId, name',
+            students: '++id, userId, batchId, name, class, phone, joiningDate, monthlyFee',
+            fees: '++id, userId, studentId, year, month, status, fee'
+        });
+
+        const auth = (() => {
+            let currentUser = null;
+
+            const hashPin = (pin) => {
+                return CryptoJS.SHA256(pin).toString(CryptoJS.enc.Hex);
+            };
+
+            const register = async (username, pin) => {
+                if (!username || pin.length !== 4) {
+                    return { success: false, message: "Username and a 4-digit PIN are required." };
+                }
+                const existingUser = await db.users.where('username').equalsIgnoreCase(username).first();
+                if (existingUser) {
+                    return { success: false, message: "Username already exists." };
+                }
+                const pinHash = hashPin(pin);
+                const userId = await db.users.add({ username, pinHash });
+                return { success: true, userId, message: "Registration successful. You can now log in." };
+            };
+
+            const login = async (username, pin) => {
+                const user = await db.users.where('username').equalsIgnoreCase(username).first();
+                if (!user) {
+                    return { success: false, message: "Invalid username or PIN." };
+                }
+                const pinHash = hashPin(pin);
+                if (user.pinHash !== pinHash) {
+                    return { success: false, message: "Invalid username or PIN." };
+                }
+                currentUser = user;
+                return { success: true, message: "Login successful!" };
+            };
+
+            const logout = () => {
+                currentUser = null;
+                ui.render();
+            };
+
+            const getUserId = () => currentUser ? currentUser.id : null;
+            const getCurrentUser = () => currentUser;
+
+            return { register, login, logout, getUserId, getCurrentUser };
+        })();
+
+        // ===========================================================================================================
+        // 2. DATA MANAGEMENT MODULES (Batches, Students, Fees)
+        // ===========================================================================================================
+
+        const dataManager = (() => {
+            const getBatches = async () => {
+                const userId = auth.getUserId();
+                return userId ? await db.batches.where('userId').equals(userId).toArray() : [];
+            };
+
+            const addBatch = async (name) => {
+                const userId = auth.getUserId();
+                if (userId) {
+                    await db.batches.add({ userId, name });
+                }
+            };
+
+            const getStudents = async () => {
+                const userId = auth.getUserId();
+                return userId ? await db.students.where('userId').equals(userId).toArray() : [];
+            };
+
+            const getStudentsByBatch = async (batchId) => {
+                const userId = auth.getUserId();
+                return userId ? await db.students.where({ userId, batchId }).toArray() : [];
+            };
+
+            const addStudent = async (student) => {
+                const userId = auth.getUserId();
+                if (!userId) return;
+                const studentId = await db.students.add({
+                    userId,
+                    batchId: parseInt(student.batchId) || null,
+                    name: student.name,
+                    class: student.class,
+                    phone: student.phone,
+                    joiningDate: student.joiningDate,
+                    monthlyFee: parseInt(student.monthlyFee)
+                });
+                await generateInitialFees(studentId, student.joiningDate, parseInt(student.monthlyFee));
+            };
+
+            // FIX: The logic has been updated to only change 'Unpaid' fee records.
+            const updateStudent = async (id, student) => {
+                const userId = auth.getUserId();
+                if (!userId) {
+                    throw new Error("Authentication failed. Please log in.");
+                }
+                
+                const existingStudent = await db.students.get(id);
+                if (!existingStudent) {
+                    throw new Error(`Student with ID ${id} not found.`);
+                }
+
+                // Check if the joining date has changed. If so, clear and regenerate all fees.
+                if (existingStudent.joiningDate !== student.joiningDate) {
+                    await db.fees.where({ userId, studentId: id }).delete();
+                    await generateInitialFees(id, student.joiningDate, parseInt(student.monthlyFee));
+                } else if (existingStudent.monthlyFee !== parseInt(student.monthlyFee)) {
+                    // CRITICAL FIX: Only update fee records that are 'Unpaid'
+                    const feesToUpdate = await db.fees
+                        .where({ userId, studentId: id })
+                        .filter(fee => fee.status === 'Unpaid')
+                        .toArray();
+
+                    await db.fees.bulkPut(feesToUpdate.map(fee => ({
+                        ...fee,
+                        fee: parseInt(student.monthlyFee)
+                    })));
+                }
+
+                // Update the student's main record with the new data.
+                await db.students.update(id, {
+                    name: student.name,
+                    class: student.class,
+                    phone: student.phone,
+                    batchId: parseInt(student.batchId) || null,
+                    joiningDate: student.joiningDate,
+                    monthlyFee: parseInt(student.monthlyFee)
+                });
+            };
+
+            const deleteStudent = async (id) => {
+                const userId = auth.getUserId();
+                if (userId) {
+                    await db.students.delete(id);
+                    await db.fees.where({ userId, studentId: id }).delete();
+                }
+            };
+
+            const getFees = async (studentId) => {
+                const userId = auth.getUserId();
+                if (!userId || !studentId) return [];
+
+                const student = await db.students.get(studentId);
+                if (!student) return [];
+
+                const fees = await db.fees.where({ userId, studentId: studentId }).toArray();
+                const feeMap = new Map(fees.map(f => [`${f.year}-${f.month}`, f]));
+
+                const joining = new Date(student.joiningDate);
+                const today = new Date();
+                const result = [];
+                for (let year = joining.getFullYear(); year <= today.getFullYear(); year++) {
+                    let startMonth = year === joining.getFullYear() ? joining.getMonth() : 0;
+                    let endMonth = year === today.getFullYear() ? today.getMonth() : 11;
+
+                    for (let month = startMonth; month <= endMonth; month++) {
+                        const feeRecord = feeMap.get(`${year}-${month}`);
+                        const status = feeRecord ? feeRecord.status : 'Unpaid';
+                        const feeAmount = feeRecord ? feeRecord.fee : student.monthlyFee;
+                        
+                        result.push({
+                            studentId,
+                            year,
+                            month,
+                            monthName: new Date(year, month).toLocaleString('default', { month: 'long' }),
+                            status,
+                            fee: feeAmount
+                        });
+                    }
+                }
+                return result;
+            };
+
+            const generateInitialFees = async (studentId, joiningDate, monthlyFee) => {
+                const joining = new Date(joiningDate);
+                const today = new Date();
+                const userId = auth.getUserId();
+                if (!userId || !studentId || !monthlyFee) return;
+
+                const feesToAdd = [];
+                for (let year = joining.getFullYear(); year <= today.getFullYear(); year++) {
+                    let startMonth = year === joining.getFullYear() ? joining.getMonth() : 0;
+                    let endMonth = year === today.getFullYear() ? today.getMonth() : 11;
+                    for (let month = startMonth; month <= endMonth; month++) {
+                        feesToAdd.push({
+                            studentId,
+                            userId,
+                            year,
+                            month,
+                            status: 'Unpaid',
+                            fee: monthlyFee
+                        });
+                    }
+                }
+                await db.fees.bulkAdd(feesToAdd).catch(Dexie.BulkError, e => {
+                     // Some items may have already been added. Ignore the error for idempotency.
+                     console.error("Some initial fees might already exist.", e);
+                });
+            };
+
+            const getFeeByMonth = async (studentId, year, month) => {
+                const userId = auth.getUserId();
+                return userId ? await db.fees.where({ userId, studentId, year, month }).first() : null;
+            };
+
+            const updateFeeStatus = async (studentId, year, month, status) => {
+                const userId = auth.getUserId();
+                if (!userId) return;
+
+                const feeRecord = await getFeeByMonth(studentId, year, month);
+                if (feeRecord) {
+                    await db.fees.update(feeRecord.id, { status });
+                } else {
+                    const student = await db.students.get(studentId);
+                    if (student) {
+                        try {
+                            await db.fees.add({
+                                studentId,
+                                userId,
+                                year,
+                                month,
+                                status,
+                                fee: student.monthlyFee
+                            });
+                        } catch (e) {
+                            console.error("Error adding new fee record:", e);
+                        }
+                    }
+                }
+            };
+
+            return {
+                getBatches, addBatch,
+                getStudents, getStudentsByBatch, addStudent, updateStudent, deleteStudent,
+                getFees, updateFeeStatus
+            };
+        })();
+
+        // ===========================================================================================================
+        // 3. UI RENDERING & NAVIGATION MODULE
+        // ===========================================================================================================
+
+        const ui = (() => {
+            let activeView = 'dashboard';
+            let studentsData = [];
+            let batchesData = [];
+            let chartInstances = {}; // Store chart instances to destroy before re-rendering
+            let isSidebarOpen = false;
+
+            const appContainer = document.getElementById('app');
+            const addBatchModal = document.getElementById('add-batch-modal');
+            const confirmModal = document.getElementById('confirm-modal');
+            const studentFormModal = document.getElementById('student-form-modal');
+            let confirmCallback = () => {};
+
+            document.getElementById('cancel-add-batch').addEventListener('click', () => addBatchModal.classList.add('hidden'));
+            document.getElementById('add-batch-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const batchName = document.getElementById('batch-name-input').value.trim();
+                if (batchName) {
+                    await dataManager.addBatch(batchName);
+                    addBatchModal.classList.add('hidden');
+                    render('batches');
+                }
+            });
+
+            document.getElementById('cancel-confirm').addEventListener('click', () => confirmModal.classList.add('hidden'));
+            document.getElementById('execute-confirm').addEventListener('click', () => {
+                confirmCallback();
+                confirmModal.classList.add('hidden');
+            });
+
+            document.getElementById('cancel-student-form').addEventListener('click', () => studentFormModal.classList.add('hidden'));
+            document.getElementById('student-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formMessage = document.getElementById('student-form-message');
+                formMessage.classList.add('hidden');
+
+                const formData = new FormData(e.target);
+                const student = {
+                    name: formData.get('name'),
+                    class: formData.get('class'),
+                    phone: formData.get('phone'),
+                    joiningDate: formData.get('joiningDate'),
+                    monthlyFee: formData.get('monthlyFee'),
+                    batchId: formData.get('batchId')
+                };
+                const studentId = parseInt(document.getElementById('student-form').dataset.studentId);
+                
+                try {
+                    if (studentId) {
+                        await dataManager.updateStudent(studentId, student);
+                    } else {
+                        await dataManager.addStudent(student);
+                    }
+                    studentFormModal.classList.add('hidden');
+                    render(activeView);
+                } catch (error) {
+                    console.error('Error saving student:', error);
+                    formMessage.textContent = error.message;
+                    formMessage.className = 'block mb-4 p-3 rounded-lg text-sm text-center bg-red-100 text-red-700';
+                    formMessage.classList.remove('hidden');
+                }
+            });
+
+
+            const showAddBatchModal = () => {
+                document.getElementById('batch-name-input').value = '';
+                addBatchModal.classList.remove('hidden');
+            };
+
+            const showConfirmModal = (message, callback) => {
+                document.getElementById('confirm-modal-title').textContent = 'Confirm Action';
+                document.getElementById('confirm-modal-message').textContent = message;
+                confirmCallback = callback;
+                confirmModal.classList.remove('hidden');
+            };
+
+            const showStudentFormModal = (student = null) => {
+                const batchesSelect = document.getElementById('student-batch');
+                batchesSelect.innerHTML = `<option value="">-- Select Batch --</option>` +
+                    batchesData.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+
+                const form = document.getElementById('student-form');
+                document.getElementById('student-form-title').textContent = student ? 'Edit Student' : 'Add New Student';
+                form.dataset.studentId = student ? student.id : '';
+                form.name.value = student ? student.name : '';
+                form.class.value = student ? student.class : '';
+                form.phone.value = student ? student.phone : '';
+                form.joiningDate.value = student ? student.joiningDate : '';
+                form.monthlyFee.value = student ? student.monthlyFee : '';
+                form.batchId.value = student ? student.batchId || '' : '';
+                
+                document.getElementById('student-form-message').classList.add('hidden');
+                studentFormModal.classList.remove('hidden');
+            };
+
+            const toggleSidebar = () => {
+                isSidebarOpen = !isSidebarOpen;
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) {
+                    sidebar.classList.toggle('open', isSidebarOpen);
+                }
+            };
+
+            const render = async (view, studentId = null) => {
+                activeView = view;
+                appContainer.innerHTML = '';
+
+                // Destroy old chart instances to prevent duplicates
+                Object.values(chartInstances).forEach(chart => chart.destroy());
+                chartInstances = {};
+
+                if (!auth.getCurrentUser()) {
+                    appContainer.appendChild(createLoginScreen());
+                } else {
+                    appContainer.innerHTML = '';
+                    appContainer.appendChild(createSidebar());
+                    const mainContentArea = document.createElement('div');
+                    mainContentArea.className = 'flex-1 p-6 overflow-y-auto content-area';
+                    
+                    const mainContent = document.createElement('div');
+                    mainContent.id = 'main-content';
+                    
+                    const hamburger = document.createElement('div');
+                    hamburger.className = 'md:hidden fixed top-4 left-4 z-50';
+                    hamburger.innerHTML = `
+                        <button id="hamburger-btn" class="text-gray-900 bg-white p-2 rounded-md shadow-lg">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </button>
+                    `;
+                    hamburger.querySelector('#hamburger-btn').addEventListener('click', toggleSidebar);
+                    mainContentArea.appendChild(hamburger);
+                    mainContentArea.appendChild(mainContent);
+                    appContainer.appendChild(mainContentArea);
+
+
+                    switch (activeView) {
+                        case 'dashboard':
+                            await renderDashboard();
+                            break;
+                        case 'students':
+                            await renderStudents();
+                            break;
+                        case 'batches':
+                            await renderBatches();
+                            break;
+                        case 'reports':
+                            await renderReports();
+                            break;
+                        case 'fee-manager':
+                            await renderFeeManager();
+                            break;
+                        case 'student-details':
+                            await renderStudentDetails(studentId);
+                            break;
+                    }
+                }
+            };
+
+            const createSidebar = () => {
+                const sidebar = document.createElement('div');
+                sidebar.className = 'bg-gray-900 text-white w-64 space-y-6 py-7 px-4 fixed h-full z-[55] sidebar md:transform-none';
+                sidebar.innerHTML = `
+                    <div class="flex items-center space-x-2 px-2 mb-6">
+                        <span class="text-3xl font-extrabold text-indigo-400">Iqra Tuition Classes</span>
+                    </div>
+                    <nav class="space-y-2">
+                        <a href="#" data-view="dashboard" class="block py-2.5 px-4 rounded-md transition duration-200 hover:bg-gray-700 hover:text-white">Dashboard</a>
+                        <a href="#" data-view="students" class="block py-2.5 px-4 rounded-md transition duration-200 hover:bg-gray-700 hover:text-white">Students</a>
+                        <a href="#" data-view="fee-manager" class="block py-2.5 px-4 rounded-md transition duration-200 hover:bg-gray-700 hover:text-white">Fee Management</a>
+                        <a href="#" data-view="batches" class="block py-2.5 px-4 rounded-md transition duration-200 hover:bg-gray-700 hover:text-white">Batches</a>
+                        <a href="#" data-view="reports" class="block py-2.5 px-4 rounded-md transition duration-200 hover:bg-gray-700 hover:text-white">Reports</a>
+                    </nav>
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <button id="logout-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition-colors">Logout</button>
+                    </div>
+                `;
+                sidebar.querySelectorAll('a[data-view]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        render(e.target.dataset.view);
+                        if (window.innerWidth < 768) {
+                            toggleSidebar();
+                        }
+                    });
+                });
+                sidebar.querySelector('#logout-btn').addEventListener('click', auth.logout);
+                return sidebar;
+            };
+
+            const createLoginScreen = () => {
+                const loginScreen = document.createElement('div');
+                loginScreen.className = 'flex flex-1 items-center justify-center bg-gray-50';
+                loginScreen.innerHTML = `
+                    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+                        <h2 class="text-3xl font-bold text-center text-gray-900">Iqra Tuition Classes</h2>
+                        <div id="auth-message" class="text-center text-red-500 font-medium"></div>
+                        <form id="auth-form" class="space-y-6">
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                                <input id="username" name="username" type="text" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label for="pin" class="block text-sm font-medium text-gray-700">4-Digit PIN</label>
+                                <input id="pin" name="pin" type="password" pattern="\\d{4}" maxlength="4" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <button type="submit" id="login-btn" class="w-full mr-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Log In</button>
+                                <button type="button" id="register-btn" class="w-full ml-2 py-2 px-4 border border-indigo-600 rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Register</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                loginScreen.querySelector('#auth-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const username = e.target.username.value;
+                    const pin = e.target.pin.value;
+                    const result = await auth.login(username, pin);
+                    if (result.success) {
+                        render('dashboard');
+                    }
+                    loginScreen.querySelector('#auth-message').textContent = result.message;
+                });
+                loginScreen.querySelector('#register-btn').addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const username = loginScreen.querySelector('#username').value;
+                    const pin = loginScreen.querySelector('#pin').value;
+                    const result = await auth.register(username, pin);
+                    loginScreen.querySelector('#auth-message').textContent = result.message;
+                });
+                return loginScreen;
+            };
+
+            const renderDashboard = async () => {
+                const mainContent = document.getElementById('main-content');
+                mainContent.innerHTML = `<h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>`;
+                const students = await dataManager.getStudents();
+                const batches = await dataManager.getBatches();
+                const fees = await getFeesForReports();
+                const monthlyFeesData = fees.monthlyData;
+                const monthlyDuesData = fees.monthlyDues;
+
+                const totalStudents = students.length;
+                const totalBatches = batches.length;
+                const totalPaid = monthlyFeesData.reduce((sum, item) => sum + item.total, 0);
+                const totalDues = monthlyDuesData.reduce((sum, item) => sum + item.total, 0);
+
+                mainContent.innerHTML += `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                            <h3 class="text-lg font-semibold text-gray-500 mb-2">Total Students</h3>
+                            <p class="text-4xl font-extrabold text-indigo-600">${totalStudents}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                            <h3 class="text-lg font-semibold text-gray-500 mb-2">Total Batches</h3>
+                            <p class="text-4xl font-extrabold text-indigo-600">${totalBatches}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                            <h3 class="text-lg font-semibold text-gray-500 mb-2">Fees Collected</h3>
+                            <p class="text-4xl font-extrabold text-green-600">₹${totalPaid.toLocaleString()}</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6 text-center">
+                            <h3 class="text-lg font-semibold text-gray-500 mb-2">Total Dues</h3>
+                            <p class="text-4xl font-extrabold text-red-600">₹${totalDues.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <h2 class="text-2xl font-bold mb-6">Monthly Fee Summary</h2>
+                        <div class="h-80">
+                            <canvas id="monthlyFeeChart"></canvas>
+                        </div>
+                    </div>
+                `;
+
+                // Render Chart.js graph
+                const monthlyChartCtx = document.getElementById('monthlyFeeChart').getContext('2d');
+                chartInstances.monthlyFeeChart = new Chart(monthlyChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthlyFeesData.map(d => d.month),
+                        datasets: [
+                            {
+                                label: 'Fees Collected',
+                                data: monthlyFeesData.map(d => d.total),
+                                backgroundColor: '#48BB78',
+                                borderColor: '#38A169',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Fees Due',
+                                data: monthlyDuesData.map(d => d.total),
+                                backgroundColor: '#F56565',
+                                borderColor: '#E53E3E',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: { size: 14, family: 'Inter' }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#e2e8f0'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const renderStudents = async () => {
+                const mainContent = document.getElementById('main-content');
+                studentsData = await dataManager.getStudents();
+                batchesData = await dataManager.getBatches();
+
+                mainContent.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Students</h1>
+                        <div class="flex items-center space-x-4">
+                            <select id="batch-filter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="all">All Batches</option>
+                                ${batchesData.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                            </select>
+                            <button id="add-student-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Add New Student</button>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Monthly Fee</th>
+                                    <th class="px-6 py-3 bg-gray-50"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Student rows will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                const renderFilteredStudents = (filterBatchId) => {
+                    const tableBody = mainContent.querySelector('#students-table-body');
+                    tableBody.innerHTML = '';
+                    const studentsToRender = filterBatchId === 'all' ? studentsData : studentsData.filter(s => s.batchId == filterBatchId);
+                    
+                    if (studentsToRender.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No students found.</td></tr>`;
+                    } else {
+                        studentsToRender.forEach(student => {
+                            const batch = batchesData.find(b => b.id === student.batchId);
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap">${student.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${batch ? batch.name : 'Unassigned'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${student.class}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">₹${student.monthlyFee}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button data-id="${student.id}" class="text-indigo-600 hover:text-indigo-900 student-view-btn font-medium">View</button>
+                                    <button data-id="${student.id}" class="text-indigo-600 hover:text-indigo-900 ml-4 student-edit-btn font-medium">Edit</button>
+                                    <button data-id="${student.id}" class="text-red-600 hover:text-red-900 ml-4 student-delete-btn font-medium">Delete</button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                        // Add event listeners after populating the table
+                        mainContent.querySelectorAll('.student-view-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                const studentId = parseInt(e.target.dataset.id);
+                                render('student-details', studentId);
+                            });
+                        });
+                        mainContent.querySelectorAll('.student-edit-btn').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                const studentId = parseInt(e.target.dataset.id);
+                                const student = await db.students.get(studentId);
+                                showStudentFormModal(student);
+                            });
+                        });
+                        mainContent.querySelectorAll('.student-delete-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                const studentId = parseInt(e.target.dataset.id);
+                                showConfirmModal('Are you sure you want to delete this student? This action cannot be undone.', async () => {
+                                    await dataManager.deleteStudent(studentId);
+                                    render('students');
+                                });
+                            });
+                        });
+                    }
+                };
+
+                mainContent.querySelector('#add-student-btn').addEventListener('click', () => showStudentFormModal());
+                mainContent.querySelector('#batch-filter').addEventListener('change', (e) => {
+                    renderFilteredStudents(e.target.value);
+                });
+                renderFilteredStudents('all');
+            };
+            
+            const renderFeeManager = async () => {
+                const mainContent = document.getElementById('main-content');
+                studentsData = await dataManager.getStudents();
+                batchesData = await dataManager.getBatches();
+                
+                mainContent.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Fee Management</h1>
+                        <div class="flex items-center space-x-4">
+                            <select id="batch-filter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="all">All Batches</option>
+                                ${batchesData.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Due Months</th>
+                                    <th class="px-6 py-3 bg-gray-50"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="fee-manager-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Student rows will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                const renderFilteredStudents = async (filterBatchId) => {
+                    const tableBody = mainContent.querySelector('#fee-manager-table-body');
+                    tableBody.innerHTML = '';
+                    const studentsToRender = filterBatchId === 'all' ? studentsData : studentsData.filter(s => s.batchId == filterBatchId);
+                    
+                    if (studentsToRender.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No students found in this batch.</td></tr>`;
+                    } else {
+                        for (const student of studentsToRender) {
+                            const fees = await dataManager.getFees(student.id);
+                            const dueMonths = fees.filter(f => f.status === 'Unpaid');
+                            const batch = batchesData.find(b => b.id === student.batchId);
+                            
+                            const row = document.createElement('tr');
+                            const dueCount = dueMonths.length;
+                            const dueText = dueCount === 0 ? 'All Paid' : `${dueCount} month(s) due`;
+                            const dueClass = dueCount === 0 ? 'text-green-600' : 'text-red-600';
+                            
+                            row.innerHTML = `
+                                <td class="px-6 py-4 whitespace-nowrap">${student.name}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${batch ? batch.name : 'Unassigned'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap ${dueClass} font-medium">${dueText}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button data-id="${student.id}" class="text-indigo-600 hover:text-indigo-900 fee-manager-view-btn font-medium">View & Update</button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        }
+                        
+                        mainContent.querySelectorAll('.fee-manager-view-btn').forEach(btn => {
+                            btn.addEventListener('click', (e) => {
+                                const studentId = parseInt(e.target.dataset.id);
+                                render('student-details', studentId);
+                            });
+                        });
+                    }
+                };
+
+                mainContent.querySelector('#batch-filter').addEventListener('change', (e) => {
+                    renderFilteredStudents(e.target.value);
+                });
+                renderFilteredStudents('all');
+            };
+
+            const renderStudentDetails = async (studentId) => {
+                const mainContent = document.getElementById('main-content');
+                const student = studentsData.find(s => s.id === studentId);
+                if (!student) {
+                    mainContent.innerHTML = `<p class="text-red-500">Student not found.</p>`;
+                    return;
+                }
+                const fees = await dataManager.getFees(studentId);
+                const batches = await dataManager.getBatches();
+                const studentBatch = batches.find(b => b.id === student.batchId);
+
+                mainContent.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">${student.name}</h1>
+                        <div class="space-x-4">
+                            <button id="back-to-list" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-300">Back</button>
+                            <button id="edit-student-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">Edit Student</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                        <h2 class="text-xl font-bold mb-4">Student Information</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                            <p><strong>Batch:</strong> ${studentBatch ? studentBatch.name : 'Unassigned'}</p>
+                            <p><strong>Class:</strong> ${student.class}</p>
+                            <p><strong>Phone:</strong> ${student.phone}</p>
+                            <p><strong>Joining Date:</strong> ${new Date(student.joiningDate).toDateString()}</p>
+                            <p><strong>Monthly Fee:</strong> ₹${student.monthlyFee}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold mb-4">Fee Records</h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Month</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-6 py-3 bg-gray-50"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fee-records-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Fee rows will be added here -->
+                                    <tr class="hidden" id="fee-loading-row"><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                const feeTableBody = mainContent.querySelector('#fee-records-body');
+                fees.sort((a,b) => new Date(a.year, a.month) - new Date(b.year, b.month)).forEach(fee => {
+                    const row = document.createElement('tr');
+                    const statusClass = fee.status === 'Paid' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${fee.monthName} ${fee.year}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">₹${fee.fee}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                ${fee.status}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button data-year="${fee.year}" data-month="${fee.month}" data-status="${fee.status}" class="fee-toggle-btn text-indigo-600 hover:text-indigo-900 font-medium">
+                                ${fee.status === 'Paid' ? 'Mark Unpaid' : 'Mark Paid'}
+                            </button>
+                        </td>
+                    `;
+                    feeTableBody.appendChild(row);
+                });
+
+                mainContent.querySelector('#back-to-list').addEventListener('click', () => render(activeView === 'students' ? 'students' : 'fee-manager'));
+                mainContent.querySelector('#edit-student-btn').addEventListener('click', () => showStudentFormModal(student));
+                mainContent.querySelectorAll('.fee-toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const year = parseInt(e.target.dataset.year);
+                        const month = parseInt(e.target.dataset.month);
+                        const currentStatus = e.target.dataset.status;
+                        const newStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+                        await dataManager.updateFeeStatus(studentId, year, month, newStatus);
+                        render('student-details', studentId);
+                    });
+                });
+            };
+
+            const renderBatches = async () => {
+                const mainContent = document.getElementById('main-content');
+                batchesData = await dataManager.getBatches();
+                mainContent.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Batches</h1>
+                        <button id="add-batch-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Add New Batch</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <ul id="batch-list" class="divide-y divide-gray-200">
+                            <!-- Batch list will be added here -->
+                        </ul>
+                    </div>
+                `;
+                const batchList = mainContent.querySelector('#batch-list');
+                if (batchesData.length === 0) {
+                     batchList.innerHTML = `<li class="py-4 text-gray-500 text-center">No batches created yet.</li>`;
+                } else {
+                    batchesData.forEach(batch => {
+                        const li = document.createElement('li');
+                        li.className = 'py-4 flex items-center justify-between';
+                        li.innerHTML = `
+                            <div class="text-lg font-medium text-gray-900">${batch.name}</div>
+                            <button data-id="${batch.id}" class="text-red-600 hover:text-red-900 batch-delete-btn font-medium">Delete</button>
+                        `;
+                        batchList.appendChild(li);
+                    });
+                }
+                
+                mainContent.querySelector('#add-batch-btn').addEventListener('click', () => {
+                    showAddBatchModal();
+                });
+                mainContent.querySelectorAll('.batch-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                         const batchId = parseInt(e.target.dataset.id);
+                         showConfirmModal('Are you sure you want to delete this batch? All students in this batch will be unassigned.', async () => {
+                             await db.batches.delete(batchId);
+                             const studentsInBatch = await dataManager.getStudentsByBatch(batchId);
+                             await Promise.all(studentsInBatch.map(s => db.students.update(s.id, { batchId: null })));
+                             render('batches');
+                         });
+                    });
+                });
+            };
+
+            const renderReports = async () => {
+                const mainContent = document.getElementById('main-content');
+                mainContent.innerHTML = `<h1 class="text-3xl font-bold text-gray-900 mb-6">Reports</h1>`;
+
+                const reportsData = await getFeesForReports();
+                const studentData = await dataManager.getStudents();
+                const batches = await dataManager.getBatches();
+
+                mainContent.innerHTML += `
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h2 class="text-2xl font-bold mb-4">Monthly Fee Collection</h2>
+                            <div class="h-80">
+                                <canvas id="monthlyFeeChartReports"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h2 class="text-2xl font-bold mb-4">Batch-wise Student Count</h2>
+                            <div class="h-80">
+                                <canvas id="batchStudentChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                            <h2 class="text-2xl font-bold mb-2 sm:mb-0">Detailed Fee Report</h2>
+                            <div class="space-x-2">
+                                <button id="export-csv-btn" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors">Export CSV</button>
+                                <button id="export-pdf-btn" class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition-colors">Export PDF</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student Name</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Monthly Fee</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Due</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailed-report-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Report details will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                // Chart 1: Monthly Fee Collection
+                const monthlyChartCtx = document.getElementById('monthlyFeeChartReports').getContext('2d');
+                chartInstances.monthlyFeeChartReports = new Chart(monthlyChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: reportsData.monthlyData.map(d => d.month),
+                        datasets: [
+                            {
+                                label: 'Fees Collected',
+                                data: reportsData.monthlyData.map(d => d.total),
+                                backgroundColor: '#48BB78'
+                            },
+                            {
+                                label: 'Fees Due',
+                                data: reportsData.monthlyDues.map(d => d.total),
+                                backgroundColor: '#F56565'
+                            }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                });
+
+                // Chart 2: Batch-wise Student Count
+                const batchChartCtx = document.getElementById('batchStudentChart').getContext('2d');
+                const batchCounts = batches.map(b => ({
+                    name: b.name,
+                    count: studentData.filter(s => s.batchId === b.id).length
+                }));
+                const unassignedCount = studentData.filter(s => !s.batchId).length;
+                batchCounts.push({ name: 'Unassigned', count: unassignedCount });
+
+                chartInstances.batchStudentChart = new Chart(batchChartCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: batchCounts.map(b => b.name),
+                        datasets: [{
+                            data: batchCounts.map(b => b.count),
+                            backgroundColor: ['#4299e1', '#48bb78', '#f6ad55', '#e53e3e', '#ecc94b', '#9f7aea']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // Detailed table
+                const reportTableBody = mainContent.querySelector('#detailed-report-body');
+                const detailedReportData = [];
+                for (const student of studentData) {
+                    const studentFees = await dataManager.getFees(student.id);
+                    const paidCount = studentFees.filter(f => f.status === 'Paid').length;
+                    const dueCount = studentFees.filter(f => f.status === 'Unpaid').length;
+                    
+                    const paidAmount = studentFees.filter(f => f.status === 'Paid').reduce((sum, f) => sum + f.fee, 0);
+                    const dueAmount = studentFees.filter(f => f.status === 'Unpaid').reduce((sum, f) => sum + f.fee, 0);
+
+                    const batch = batches.find(b => b.id === student.batchId);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${student.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${batch ? batch.name : 'Unassigned'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">₹${student.monthlyFee}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-green-600">₹${paidAmount} (${paidCount} mos)</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-red-600">₹${dueAmount} (${dueCount} mos)</td>
+                    `;
+                    reportTableBody.appendChild(row);
+
+                    detailedReportData.push({
+                        studentName: student.name,
+                        batch: batch ? batch.name : 'Unassigned',
+                        monthlyFee: student.monthlyFee,
+                        paidAmount: paidAmount,
+                        dueAmount: dueAmount,
+                        paidMonths: paidCount,
+                        dueMonths: dueCount
+                    });
+                }
+
+                // Export buttons
+                mainContent.querySelector('#export-csv-btn').addEventListener('click', () => {
+                    exportManager.exportToCSV(detailedReportData, 'fee_report.csv');
+                });
+                mainContent.querySelector('#export-pdf-btn').addEventListener('click', () => {
+                    exportManager.exportToPDF(detailedReportData, 'fee_report.pdf');
+                });
+            };
+
+            const getFeesForReports = async () => {
+                const students = await dataManager.getStudents();
+                const allFees = (await Promise.all(students.map(s => dataManager.getFees(s.id)))).flat();
+                
+                const monthlyData = new Map();
+                const monthlyDues = new Map();
+                
+                // Group fees by month and sum the amounts
+                allFees.forEach(fee => {
+                    const monthKey = `${new Date(fee.year, fee.month).toLocaleString('en-us', { month: 'short' })} ${fee.year}`;
+                    if (fee.status === 'Paid') {
+                        const current = monthlyData.get(monthKey) || 0;
+                        monthlyData.set(monthKey, current + fee.fee);
+                    } else {
+                        const current = monthlyDues.get(monthKey) || 0;
+                        monthlyDues.set(monthKey, current + fee.fee);
+                    }
+                });
+
+                // Get a sorted list of all months with fees
+                const allMonths = [...new Set([...monthlyData.keys(), ...monthlyDues.keys()])].sort((a,b) => {
+                    const [monthA, yearA] = a.split(' ');
+                    const [monthB, yearB] = b.split(' ');
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const dateA = new Date(parseInt(yearA), monthNames.indexOf(monthA));
+                    const dateB = new Date(parseInt(yearB), monthNames.indexOf(monthB));
+                    return dateA - dateB;
+                });
+
+                return {
+                    monthlyData: allMonths.map(month => ({ month, total: monthlyData.get(month) || 0 })),
+                    monthlyDues: allMonths.map(month => ({ month, total: monthlyDues.get(month) || 0 }))
+                };
+            };
+
+            return { render };
+        })();
+
+        // ===========================================================================================================
+        // 4. EXPORT MANAGER MODULE
+        // ===========================================================================================================
+        const exportManager = (() => {
+
+            const exportToCSV = (data, filename) => {
+                const csv = Papa.unparse(data);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const exportToPDF = (data, filename) => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(22);
+                doc.text("Tuition Fee Report", 10, 20);
+
+                const tableData = data.map(item => [
+                    item.studentName,
+                    item.batch,
+                    `₹${item.monthlyFee}`,
+                    `₹${item.paidAmount} (${item.paidMonths} mos)`,
+                    `₹${item.dueAmount} (${item.dueMonths} mos)`
+                ]);
+                const tableHeaders = ["Student Name", "Batch", "Monthly Fee", "Paid", "Due"];
+
+                doc.autoTable({
+                    startY: 30,
+                    head: [tableHeaders],
+                    body: tableData,
+                    theme: 'striped',
+                    styles: { fontSize: 10, cellPadding: 2 },
+                    headStyles: { fillColor: [71, 85, 105], textColor: [255, 255, 255] }
+                });
+
+                doc.save(filename);
+            };
+
+            return { exportToCSV, exportToPDF };
+        })();
+
+
+        // ===========================================================================================================
+        // 5. INITIALIZATION & SAMPLE DATA
+        // ===========================================================================================================
+        window.addEventListener('load', async () => {
+            try {
+                const userCount = await db.users.count();
+                if (userCount === 0) {
+                    await auth.register('admin', '1234');
+                }
+
+                const sampleUser = await db.users.where('username').equalsIgnoreCase('admin').first();
+                if (sampleUser) {
+                    await auth.login('admin', '1234');
+                    const batchesCount = await db.batches.count();
+                    if (batchesCount === 0) {
+                        await dataManager.addBatch('Math Grade 10');
+                        await dataManager.addBatch('Science Grade 12');
+
+                        const batches = await dataManager.getBatches();
+                        const mathBatchId = batches.find(b => b.name === 'Math Grade 10').id;
+                        const scienceBatchId = batches.find(b => b.name === 'Science Grade 12').id;
+
+                        const studentsCount = await db.students.count();
+                        if (studentsCount === 0) {
+                            const student1 = {
+                                name: 'Alice Johnson',
+                                class: '10',
+                                phone: '9876543210',
+                                joiningDate: '2024-01-15',
+                                monthlyFee: 1000,
+                                batchId: mathBatchId
+                            };
+                            const student2 = {
+                                name: 'Bob Williams',
+                                class: '12',
+                                phone: '9988776655',
+                                joiningDate: '2024-02-01',
+                                monthlyFee: 7500,
+                                batchId: scienceBatchId
+                            };
+                            const student3 = {
+                                name: 'Charlie Brown',
+                                class: '10',
+                                phone: '9123456789',
+                                joiningDate: '2024-03-10',
+                                monthlyFee: 5000,
+                                batchId: mathBatchId
+                            };
+                            await dataManager.addStudent(student1);
+                            await dataManager.addStudent(student2);
+                            await dataManager.addStudent(student3);
+                            
+                            // Simulate a fee change for Alice
+                            const alice = await db.students.where('name').equalsIgnoreCase('Alice Johnson').first();
+                            if (alice) {
+                                await dataManager.updateFeeStatus(alice.id, 2024, 0, 'Paid'); // Jan 2024 fee of 1000 is paid
+                                await dataManager.updateFeeStatus(alice.id, 2024, 1, 'Paid'); // Feb 2024 fee of 1000 is paid
+                                
+                                // Now, change Alice's fee starting from March
+                                const newAliceData = {
+                                    ...alice,
+                                    monthlyFee: 900,
+                                    joiningDate: '2024-01-15'
+                                };
+                                await dataManager.updateStudent(alice.id, newAliceData);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Initialization failed:", e);
+            }
+            auth.logout();
+            ui.render();
+        });
+
+    </script>
+
+</body>
+</html>
