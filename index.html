@@ -17,22 +17,26 @@
             background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(5px);
         }
-        /* Sidebar transition and state */
+        /* Mobile sidebar, hidden by default */
         .sidebar {
             transition: transform 0.3s ease-in-out;
             transform: translateX(-100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 16rem;
+            z-index: 50; /* A high z-index to ensure it's on top */
         }
         .sidebar.open {
             transform: translateX(0);
         }
+        /* Desktop sidebar is always visible */
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0);
-                position: fixed;
-                width: 16rem;
             }
             .content-area {
-                margin-left: 16rem; /* Match sidebar width */
+                margin-left: 16rem; /* Match sidebar width to prevent content overlap */
             }
         }
     </style>
@@ -222,7 +226,6 @@
                 await generateInitialFees(studentId, student.joiningDate, parseInt(student.monthlyFee));
             };
 
-            // FIX: The logic has been updated to only change 'Unpaid' fee records.
             const updateStudent = async (id, student) => {
                 const userId = auth.getUserId();
                 if (!userId) {
@@ -234,12 +237,10 @@
                     throw new Error(`Student with ID ${id} not found.`);
                 }
 
-                // Check if the joining date has changed. If so, clear and regenerate all fees.
                 if (existingStudent.joiningDate !== student.joiningDate) {
                     await db.fees.where({ userId, studentId: id }).delete();
                     await generateInitialFees(id, student.joiningDate, parseInt(student.monthlyFee));
                 } else if (existingStudent.monthlyFee !== parseInt(student.monthlyFee)) {
-                    // CRITICAL FIX: Only update fee records that are 'Unpaid'
                     const feesToUpdate = await db.fees
                         .where({ userId, studentId: id })
                         .filter(fee => fee.status === 'Unpaid')
@@ -251,7 +252,6 @@
                     })));
                 }
 
-                // Update the student's main record with the new data.
                 await db.students.update(id, {
                     name: student.name,
                     class: student.class,
@@ -327,7 +327,6 @@
                     }
                 }
                 await db.fees.bulkAdd(feesToAdd).catch(Dexie.BulkError, e => {
-                     // Some items may have already been added. Ignore the error for idempotency.
                      console.error("Some initial fees might already exist.", e);
                 });
             };
@@ -476,10 +475,19 @@
                     sidebar.classList.toggle('open', isSidebarOpen);
                 }
             };
+            
+            const closeSidebar = () => {
+                isSidebarOpen = false;
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) {
+                    sidebar.classList.remove('open');
+                }
+            };
 
             const render = async (view, studentId = null) => {
                 activeView = view;
                 appContainer.innerHTML = '';
+                closeSidebar(); // Ensure sidebar is closed on mobile when navigating
 
                 // Destroy old chart instances to prevent duplicates
                 Object.values(chartInstances).forEach(chart => chart.destroy());
@@ -492,18 +500,26 @@
                     appContainer.appendChild(createSidebar());
                     const mainContentArea = document.createElement('div');
                     mainContentArea.className = 'flex-1 p-4 md:p-6 overflow-y-auto content-area';
+                    mainContentArea.addEventListener('click', (e) => {
+                         if (isSidebarOpen && window.innerWidth < 768) {
+                             closeSidebar();
+                         }
+                    });
                     
                     const mainContent = document.createElement('div');
                     mainContent.id = 'main-content';
                     
                     const hamburger = document.createElement('div');
-                    hamburger.className = 'md:hidden fixed top-4 left-4 z-50';
+                    hamburger.className = 'md:hidden fixed top-4 left-4 z-[55]';
                     hamburger.innerHTML = `
                         <button id="hamburger-btn" class="text-gray-900 bg-white p-2 rounded-md shadow-lg">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         </button>
                     `;
-                    hamburger.querySelector('#hamburger-btn').addEventListener('click', toggleSidebar);
+                    hamburger.querySelector('#hamburger-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent the main content's click listener from firing
+                        toggleSidebar();
+                    });
                     mainContentArea.appendChild(hamburger);
                     mainContentArea.appendChild(mainContent);
                     appContainer.appendChild(mainContentArea);
@@ -534,7 +550,7 @@
 
             const createSidebar = () => {
                 const sidebar = document.createElement('div');
-                sidebar.className = 'bg-gray-900 text-white w-64 space-y-6 py-7 px-4 fixed h-full z-[55] sidebar md:transform-none';
+                sidebar.className = 'bg-gray-900 text-white w-64 space-y-6 py-7 px-4 h-full z-[55] sidebar md:transform-none';
                 sidebar.innerHTML = `
                     <div class="flex items-center space-x-2 px-2 mb-6">
                         <span class="text-3xl font-extrabold text-indigo-400">Iqra Tuition Classes</span>
@@ -555,7 +571,7 @@
                         e.preventDefault();
                         render(e.target.dataset.view);
                         if (window.innerWidth < 768) {
-                            toggleSidebar();
+                            closeSidebar();
                         }
                     });
                 });
@@ -706,12 +722,12 @@
                 mainContent.innerHTML = `
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                         <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Students</h1>
-                        <div class="flex flex-wrap gap-2 items-center mt-2 sm:mt-0">
-                            <select id="batch-filter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full sm:w-auto">
+                            <select id="batch-filter" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto">
                                 <option value="all">All Batches</option>
                                 ${batchesData.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
                             </select>
-                            <button id="add-student-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Add New Student</button>
+                            <button id="add-student-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors w-full sm:w-auto">Add New Student</button>
                         </div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-lg overflow-x-auto">
@@ -957,7 +973,7 @@
                 mainContent.innerHTML = `
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                         <h1 class="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Batches</h1>
-                        <button id="add-batch-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Add New Batch</button>
+                        <button id="add-batch-btn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors w-full sm:w-auto">Add New Batch</button>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-lg">
                         <ul id="batch-list" class="divide-y divide-gray-200">
